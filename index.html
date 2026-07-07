@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-left">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span class="nav-title">Assistant</span>
+    </div>
+    <div class="nav-right">
+        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" class="upload-form" id="uploadForm">
+            <label class="btn btn-upload">
+                Upload Document
+                <input type="file" name="file" accept=".pdf,.docx,.txt" onchange="document.getElementById('uploadForm').submit();" style="display: none;">
+            </label>
+        </form>
+        <form action="{{ url_for('remove_documents') }}" method="post" style="display:inline;">
+            <button type="submit" class="btn btn-remove">Remove Document</button>
+        </form>
+    </div>
+</nav>
+
+<main class="main-content">
+    
+    <div class="flash-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% if error %}
+        <div class="flash error">{{ error }}</div>
+        {% endif %}
+    </div>
+
+    <h1 class="heading">Assistant</h1>
+
+    <div class="ask-container">
+        <form action="{{ url_for('ask') }}" method="post" class="ask-form">
+            <div class="input-wrapper">
+                <input type="text" name="question" class="question-input" placeholder="Type your question here..." value="{{ question if question else '' }}" required>
+                <button type="submit" class="btn btn-ask">Ask</button>
+            </div>
+        </form>
+    </div>
+
+    {% if answer %}
+    <div class="answer-card">
+        <div class="answer-header">
+            <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            <h2 class="answer-title">Answer</h2>
+        </div>
+        <div class="answer-body">
+            {{ answer }}
+        </div>
+    </div>
+    {% endif %}
+
+</main>
+
+<script>
+    // Minimal JS to auto-hide flash messages after 4 seconds
+    document.addEventListener("DOMContentLoaded", function() {
+        setTimeout(function() {
+            var flashes = document.querySelectorAll('.flash');
+            flashes.forEach(function(flash) {
+                flash.style.display = 'none';
+            });
+        }, 4000);
+    });
+</script>
+
+</body>
+</html>
