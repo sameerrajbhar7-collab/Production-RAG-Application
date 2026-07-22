@@ -6,6 +6,7 @@ import docx
 import chromadb
 from sentence_transformers import SentenceTransformer
 import numpy as np
+from openai import OpenAI
 from sklearn.metrics.pairwise import cosine_similarity
 from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter

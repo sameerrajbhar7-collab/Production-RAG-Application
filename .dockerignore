@@ -1,0 +1,37 @@
+# Git
+.git
+.github
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.tox/
+.venv/
+venv/
+ENV/
+env/
+
+# Environment and secrets
+.env
+
+# Application databases & local uploads
+chroma_db/
+uploads/*
+!uploads/.gitkeep
+
+# IDEs and OS metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Documentation
+README.md
