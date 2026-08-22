@@ -4,7 +4,6 @@ import openai
 import PyPDF2
 import docx
 import chromadb
-from sentence_transformers import SentenceTransformer
 import numpy as np
 from openai import OpenAI
 from sklearn.metrics.pairwise import cosine_similarity
@@ -34,18 +33,20 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # -----------------------------------------------------
 chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
 
-# Load SentenceTransformer directly
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-
-# Create a custom embedding function for ChromaDB to use
-class CustomEmbeddingFunction:
+# Create a custom embedding function for ChromaDB to use OpenAI
+class OpenAIEmbeddingFunction:
     def name(self) -> str:
-        return "sentence_transformer"
+        return "openai_embeddings"
 
     def __call__(self, input: list[str]) -> list[list[float]]:
-        return embedding_model.encode(input).tolist()
+        client = OpenAI()
+        response = client.embeddings.create(
+            input=input,
+            model="text-embedding-3-small"
+        )
+        return [data.embedding for data in response.data]
 
-embedding_fn = CustomEmbeddingFunction()
+embedding_fn = OpenAIEmbeddingFunction()
 
 def get_collection():
     """Always fetch a fresh collection reference to avoid stale UUID issues."""
@@ -132,8 +133,8 @@ def ask():
     if all_embeddings is None or len(all_embeddings) == 0:
         context = "No relevant context found."
     else:
-        # Generate embedding for the user's question directly using the model
-        question_embedding = embedding_model.encode([question])[0]
+        # Generate embedding for the user's question using OpenAI
+        question_embedding = embedding_fn([question])[0]
         
         # Convert to numpy arrays for sklearn
         q_arr = np.array(question_embedding).reshape(1, -1)
