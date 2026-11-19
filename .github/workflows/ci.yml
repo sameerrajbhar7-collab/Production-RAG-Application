@@ -61,8 +61,8 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.username }}
-          password: ${{ secrets.password }}
+          username: ${{ secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USERNAME || secrets.username }}
+          password: ${{ secrets.DOCKERHUB_TOKEN || secrets.DOCKER_PASSWORD || secrets.password }}
 
       - name: Build and Push Image
         uses: docker/build-push-action@v6
@@ -70,8 +70,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.username }}/production-rag-application:latest
-            ${{ secrets.username }}/production-rag-application:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USERNAME || secrets.username }}/production-rag-application:latest
+            ${{ secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USERNAME || secrets.username }}/production-rag-application:${{ github.sha }}
 
   deploy-ec2:
     name: Deploy to AWS EC2
@@ -82,57 +82,61 @@ jobs:
     steps:
       - name: Deploy Application
         uses: appleboy/ssh-action@v1.2.2
-
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: OPENAI_API_KEY
-
           script: |
             set -e
 
             echo "Starting Production RAG deployment..."
 
-            APP_DIR="/opt/production-rag"
+            # Use user home directory to prevent "mkdir: Permission denied" on /opt
+            APP_DIR="$HOME/production-rag"
 
             mkdir -p "$APP_DIR/chroma_db"
             mkdir -p "$APP_DIR/uploads"
 
-            echo "Pulling latest Docker image..."
+            # Check if docker commands require sudo
+            if docker ps >/dev/null 2>&1; then
+              DOCKER_CMD="docker"
+            else
+              DOCKER_CMD="sudo docker"
+            fi
 
-            docker pull ${{ secrets.username }}/production-rag-application:latest
+            IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USERNAME || secrets.username }}/production-rag-application:latest"
+
+            echo "Pulling latest Docker image: $IMAGE_NAME..."
+            $DOCKER_CMD pull "$IMAGE_NAME"
 
             echo "Stopping old container..."
-
-            docker stop production-rag || true
-            docker rm production-rag || true
+            $DOCKER_CMD stop production-rag || true
+            $DOCKER_CMD rm production-rag || true
 
             echo "Starting new container..."
-
-            docker run -d \
+            $DOCKER_CMD run -d \
               --name production-rag \
               --restart unless-stopped \
               -p 5000:5000 \
               -e OPENAI_API_KEY="$OPENAI_API_KEY" \
               -v "$APP_DIR/chroma_db:/app/chroma_db" \
               -v "$APP_DIR/uploads:/app/uploads" \
-              ${{ secrets.username }}/production-rag-application:latest
+              "$IMAGE_NAME"
 
             echo "Checking application..."
-
             sleep 10
 
             if ! curl -fsS http://localhost:5000/ > /dev/null; then
-              echo "Deployment health check failed!"
-              docker logs production-rag
+              echo "Deployment health check failed! Fetching logs..."
+              $DOCKER_CMD logs production-rag
               exit 1
             fi
 
             echo "Cleaning unused Docker images..."
-
-            docker image prune -f
+            $DOCKER_CMD image prune -f
 
             echo "Deployment completed successfully!"
-
-            docker ps
+            $DOCKER_CMD ps
