@@ -4,15 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAG Assistant</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1">
+    <title>Production RAG Application</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
     <!-- Top Dark Header Banner -->
-    <header class="top-banner"></header>
+    <header class="top-banner">
+        <div class="banner-brand">
+            <svg class="brand-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span class="brand-title">Production RAG Application</span>
+        </div>
+    </header>
 
     <div class="app-layout">
         <!-- Left Dark Sidebar -->
@@ -73,6 +84,11 @@
             <!-- VIEW 1: CHAT / ASSISTANT VIEW -->
             <section id="chatSection" class="content-view {% if active_tab != 'documents' %}active{% endif %}">
                 <div class="chat-center-wrapper">
+                    <!-- Title on Chat Bar -->
+                    <div class="chat-header-block">
+                        <h1 class="chat-title">Production RAG Application</h1>
+                    </div>
+
                     <div class="ask-container">
                         <form action="{{ url_for('ask') }}" method="post" class="ask-form">
                             <div class="input-wrapper">
