@@ -61,8 +61,8 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.username }}
+          password: ${{ secrets.password }}
 
       - name: Build and Push Image
         uses: docker/build-push-action@v6
@@ -70,8 +70,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/production-rag-application:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/production-rag-application:${{ github.sha }}
+            ${{ secrets.username }}/production-rag-application:latest
+            ${{ secrets.username }}/production-rag-application:${{ github.sha }}
 
   deploy-ec2:
     name: Deploy to AWS EC2
@@ -82,9 +82,6 @@ jobs:
     steps:
       - name: Deploy Application
         uses: appleboy/ssh-action@v1.2.2
-
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -104,7 +101,7 @@ jobs:
 
             echo "Pulling latest Docker image..."
 
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/production-rag-application:latest
+            docker pull ${{ secrets.username }}/production-rag-application:latest
 
             echo "Stopping old container..."
 
@@ -120,7 +117,7 @@ jobs:
               -e OPENAI_API_KEY="$OPENAI_API_KEY" \
               -v "$APP_DIR/chroma_db:/app/chroma_db" \
               -v "$APP_DIR/uploads:/app/uploads" \
-              ${{ secrets.DOCKERHUB_USERNAME }}/production-rag-application:latest
+              ${{ secrets.username }}/production-rag-application:latest
 
             echo "Checking application..."
 
