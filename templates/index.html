@@ -5,87 +5,336 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RAG Assistant</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
-    <nav class="navbar">
-        <div class="nav-left">
-            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            <span class="nav-title">Enterprise Ai Agent</span>
-        </div>
-        <div class="nav-right">
-            <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" class="upload-form"
-                id="uploadForm">
-                <label class="btn btn-upload">
-                    Upload Document
-                    <input type="file" name="file" accept=".pdf,.docx,.txt"
-                        onchange="document.getElementById('uploadForm').submit();" style="display: none;">
-                </label>
-            </form>
-            <form action="{{ url_for('remove_documents') }}" method="post" style="display:inline;">
-                <button type="submit" class="btn btn-remove">Remove Document</button>
-            </form>
-        </div>
-    </nav>
+    <!-- Top Dark Header Banner -->
+    <header class="top-banner"></header>
 
-    <main class="main-content">
+    <div class="app-layout">
+        <!-- Left Dark Sidebar -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <!-- Chat Tab Button -->
+                <button type="button" class="nav-item {% if active_tab != 'documents' %}active{% endif %}"
+                    id="tabBtnChat" onclick="switchTab('chat')">
+                    <span class="nav-icon-label">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <span>Chat</span>
+                    </span>
+                    <span class="nav-chevron">›</span>
+                </button>
 
-        <div class="flash-container">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="flash {{ category }}">{{ message }}</div>
-            {% endfor %}
-            {% endif %}
-            {% endwith %}
+                <!-- Documents Tab Button -->
+                <button type="button" class="nav-item {% if active_tab == 'documents' %}active{% endif %}"
+                    id="tabBtnDocs" onclick="switchTab('documents')">
+                    <span class="nav-icon-label">
+                        <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        <span>Documents</span>
+                    </span>
+                    <span class="nav-chevron">›</span>
+                </button>
+            </nav>
+        </aside>
 
-            {% if error %}
-            <div class="flash error">{{ error }}</div>
-            {% endif %}
-        </div>
+        <!-- Main White Canvas Content -->
+        <main class="main-viewport">
 
-        <h1 class="heading">Assistant</h1>
+            <!-- Flash notifications -->
+            <div class="flash-container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
 
-        <div class="ask-container">
-            <form action="{{ url_for('ask') }}" method="post" class="ask-form">
-                <div class="input-wrapper">
-                    <input type="text" name="question" class="question-input" placeholder="Type your question here..."
-                        value="{{ question if question else '' }}" required>
-                    <button type="submit" class="btn btn-ask">Ask</button>
+                {% if error %}
+                <div class="flash error">{{ error }}</div>
+                {% endif %}
+            </div>
+
+            <!-- VIEW 1: CHAT / ASSISTANT VIEW -->
+            <section id="chatSection" class="content-view {% if active_tab != 'documents' %}active{% endif %}">
+                <div class="chat-center-wrapper">
+                    <div class="ask-container">
+                        <form action="{{ url_for('ask') }}" method="post" class="ask-form">
+                            <div class="input-wrapper">
+                                <input type="text" name="question" class="question-input"
+                                    placeholder="Type your question here..." value="{{ question if question else '' }}"
+                                    required autocomplete="off">
+                                <button type="submit" class="btn btn-ask">Ask</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    {% if answer %}
+                    <div class="answer-card">
+                        <div class="answer-header">
+                            <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                            </svg>
+                            <h2 class="answer-title">Answer</h2>
+                        </div>
+                        <div class="answer-body">{{ answer }}</div>
+                    </div>
+                    {% endif %}
                 </div>
-            </form>
-        </div>
+            </section>
 
-        {% if answer %}
-        <div class="answer-card">
-            <div class="answer-header">
-                <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
-                <h2 class="answer-title">Answer</h2>
-            </div>
-            <div class="answer-body">
-                {{ answer }}
-            </div>
-        </div>
-        {% endif %}
+            <!-- VIEW 2: DOCUMENTS MANAGEMENT VIEW -->
+            <section id="docsSection" class="content-view {% if active_tab == 'documents' %}active{% endif %}">
+                <div class="docs-management-container">
+                    <!-- Title Section -->
+                    <div class="docs-header">
+                        <h1 class="docs-title">Documents Management</h1>
+                        <p class="docs-subtitle">Upload, chunk, embed, and assign department-level permissions for RAG
+                            vector retrieval.</p>
+                    </div>
 
-    </main>
+                    <!-- Upload Card -->
+                    <div class="upload-card">
+                        <div class="upload-card-header">
+                            <svg class="cloud-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22"
+                                viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+                                <polyline points="12 12 12 16"></polyline>
+                                <polyline points="9 13 12 10 15 13"></polyline>
+                            </svg>
+                            <h3 class="upload-card-title">Upload New Company Document</h3>
+                        </div>
+                        <div class="upload-card-sublabel">SELECT FILE (PDF, DOCX, TXT, CSV)</div>
+
+                        <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data"
+                            class="upload-form-row" id="documentUploadForm">
+                            <div class="file-picker-group">
+                                <label for="fileUploadInput" class="custom-file-btn">Choose File</label>
+                                <span id="fileChosenLabel" class="file-chosen-text">No file chosen</span>
+                                <input type="file" id="fileUploadInput" name="file" accept=".pdf,.docx,.txt"
+                                    onchange="handleFileSelect(this)" style="display: none;" required>
+                            </div>
+
+                            <div class="dept-picker-group">
+                                <select name="department" class="select-dept" id="deptSelectInput">
+                                    <option value="All">All Departments</option>
+                                    <option value="FIN">Finance (FIN)</option>
+                                    <option value="IT">Information Tech (IT)</option>
+                                    <option value="HR">Human Resources (HR)</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-upload-submit">Upload Document</button>
+                        </form>
+                    </div>
+
+                    <!-- Filter & Search Row -->
+                    <div class="filter-search-row">
+                        <div class="search-input-box">
+                            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <input type="text" id="docSearchInput" class="doc-search-field"
+                                placeholder="Search documents..." onkeyup="filterDocsTable()">
+                        </div>
+
+                        <div class="filter-dropdown-box">
+                            <svg class="filter-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                            </svg>
+                            <select id="docDeptFilter" class="doc-filter-select" onchange="filterDocsTable()">
+                                <option value="ALL">All Departments</option>
+                                <option value="FIN">FIN</option>
+                                <option value="IT">IT</option>
+                                <option value="HR">HR</option>
+                                <option value="ALL_ACL">All</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Documents Table -->
+                    <div class="table-container">
+                        <table class="docs-table" id="docsTable">
+                            <thead>
+                                <tr>
+                                    <th class="th-doc">DOCUMENT</th>
+                                    <th class="th-acl">DEPARTMENT ACL</th>
+                                    <th class="th-pages">PAGES / CHUNKS</th>
+                                    <th class="th-status">STATUS</th>
+                                    <th class="th-date">ADDED DATE</th>
+                                    <th class="th-actions">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if documents %}
+                                {% for doc in documents %}
+                                <tr class="doc-row" data-dept="{{ doc.department }}"
+                                    data-name="{{ doc.filename | lower }}">
+                                    <!-- Document Column -->
+                                    <td class="td-doc">
+                                        <div class="doc-item-wrapper">
+                                            <div class="doc-icon-badge">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"
+                                                    viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"
+                                                    stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z">
+                                                    </path>
+                                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                                                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                                                </svg>
+                                            </div>
+                                            <div class="doc-meta-block">
+                                                <span class="doc-name">{{ doc.filename }}</span>
+                                                <span class="doc-submeta">{{ doc.size }} • {{ doc.ext }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Department ACL Column -->
+                                    <td class="td-acl">
+                                        <span class="dept-badge">{{ doc.department }}</span>
+                                    </td>
+
+                                    <!-- Pages / Chunks Column -->
+                                    <td class="td-pages">
+                                        <span class="pages-text">{{ doc.pages }} <span class="bullet-dot">•</span> {{
+                                            doc.vectors }}</span>
+                                    </td>
+
+                                    <!-- Status Column -->
+                                    <td class="td-status">
+                                        <span class="status-badge indexed">
+                                            <span class="status-dot"></span>
+                                            {{ doc.status }}
+                                        </span>
+                                    </td>
+
+                                    <!-- Added Date Column -->
+                                    <td class="td-date">
+                                        <span class="date-text">{{ doc.added_date }}</span>
+                                    </td>
+
+                                    <!-- Actions Column -->
+                                    <td class="td-actions">
+                                        <form action="{{ url_for('delete_document', filename=doc.filename) }}"
+                                            method="post" onsubmit="return confirm('Delete {{ doc.filename }}?');"
+                                            style="display:inline;">
+                                            <button type="submit" class="action-btn delete-btn" title="Delete Document">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17"
+                                                    viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"
+                                                    stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                    <path
+                                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                                    </path>
+                                                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="empty-table-msg">No documents found.</td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
 
     <script>
-        // Minimal JS to auto-hide flash messages after 4 seconds
+        // Tab switching logic
+        function switchTab(tab) {
+            const chatBtn = document.getElementById('tabBtnChat');
+            const docsBtn = document.getElementById('tabBtnDocs');
+            const chatSec = document.getElementById('chatSection');
+            const docsSec = document.getElementById('docsSection');
+
+            if (tab === 'chat') {
+                chatBtn.classList.add('active');
+                docsBtn.classList.remove('active');
+                chatSec.classList.add('active');
+                docsSec.classList.remove('active');
+            } else {
+                docsBtn.classList.add('active');
+                chatBtn.classList.remove('active');
+                docsSec.classList.add('active');
+                chatSec.classList.remove('active');
+            }
+        }
+
+        // Handle File Selection label update
+        function handleFileSelect(input) {
+            const label = document.getElementById('fileChosenLabel');
+            if (input.files && input.files.length > 0) {
+                label.textContent = input.files[0].name;
+            } else {
+                label.textContent = 'No file chosen';
+            }
+        }
+
+        // Live Table Search & Department Filtering
+        function filterDocsTable() {
+            const searchQuery = document.getElementById('docSearchInput').value.toLowerCase();
+            const selectedDept = document.getElementById('docDeptFilter').value;
+            const rows = document.querySelectorAll('#docsTable tbody tr.doc-row');
+
+            rows.forEach(row => {
+                const docName = row.getAttribute('data-name') || '';
+                const docDept = row.getAttribute('data-dept') || '';
+
+                const matchesSearch = docName.includes(searchQuery);
+                let matchesDept = true;
+
+                if (selectedDept === 'ALL') {
+                    matchesDept = true;
+                } else if (selectedDept === 'ALL_ACL') {
+                    matchesDept = (docDept.toLowerCase() === 'all');
+                } else {
+                    matchesDept = (docDept.toUpperCase() === selectedDept);
+                }
+
+                if (matchesSearch && matchesDept) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Auto-dismiss Flash Messages
         document.addEventListener("DOMContentLoaded", function () {
             setTimeout(function () {
                 var flashes = document.querySelectorAll('.flash');
