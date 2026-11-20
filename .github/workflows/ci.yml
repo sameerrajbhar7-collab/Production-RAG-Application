@@ -92,7 +92,9 @@ jobs:
           script: |
             set -e
 
+            echo "=========================================="
             echo "Starting Production RAG deployment..."
+            echo "=========================================="
 
             # Use user home directory to prevent "mkdir: Permission denied" on /opt
             APP_DIR="$HOME/production-rag"
@@ -109,12 +111,29 @@ jobs:
 
             IMAGE_NAME="${{ secrets.DOCKERHUB_USERNAME || secrets.DOCKER_USERNAME || secrets.username }}/production-rag-application:latest"
 
-            echo "Pulling latest Docker image: $IMAGE_NAME..."
-            $DOCKER_CMD pull "$IMAGE_NAME"
+            echo "=== Disk Space Before Cleanup ==="
+            df -h /
 
             echo "Stopping old container..."
             $DOCKER_CMD stop production-rag || true
             $DOCKER_CMD rm production-rag || true
+
+            echo "Freeing disk space: removing unused Docker images and build cache..."
+            $DOCKER_CMD system prune -af --volumes || true
+            $DOCKER_CMD builder prune -af || true
+
+            echo "Cleaning journal logs and temporary ingest files..."
+            sudo journalctl --vacuum-size=50M || true
+            sudo journalctl --vacuum-time=1d || true
+            sudo apt-get clean || true
+            sudo rm -rf /tmp/* /var/tmp/* || true
+            sudo rm -rf /var/lib/containerd/io.containerd.content.v1.content/ingest/* || true
+
+            echo "=== Disk Space After Cleanup ==="
+            df -h /
+
+            echo "Pulling latest Docker image: $IMAGE_NAME..."
+            $DOCKER_CMD pull "$IMAGE_NAME"
 
             echo "Starting new container..."
             $DOCKER_CMD run -d \
@@ -126,17 +145,20 @@ jobs:
               -v "$APP_DIR/uploads:/app/uploads" \
               "$IMAGE_NAME"
 
-            echo "Checking application..."
-            sleep 10
-
-            if ! curl -fsS http://localhost:5000/ > /dev/null; then
-              echo "Deployment health check failed! Fetching logs..."
-              $DOCKER_CMD logs production-rag
-              exit 1
-            fi
-
-            echo "Cleaning unused Docker images..."
-            $DOCKER_CMD image prune -f
+            echo "Waiting for application startup..."
+            for i in 1 2 3 4 5; do
+              sleep 4
+              if curl -fsS http://localhost:5000/health > /dev/null 2>&1 || curl -fsS http://localhost:5000/ > /dev/null 2>&1; then
+                echo "Health check succeeded on attempt $i!"
+                break
+              fi
+              echo "Attempt $i waiting for service..."
+              if [ $i -eq 5 ]; then
+                echo "Deployment health check failed! Fetching logs..."
+                $DOCKER_CMD logs --tail 50 production-rag
+                exit 1
+              fi
+            done
 
             echo "Deployment completed successfully!"
             $DOCKER_CMD ps
