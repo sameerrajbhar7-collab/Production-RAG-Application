@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - {{ config.COMPANY_NAME }} RAG Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=3">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body class="login-body">
+
+    <!-- Top Dark Header Banner -->
+    <header class="top-banner">
+        <div class="banner-brand">
+            <svg class="brand-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span class="brand-title">{{ config.COMPANY_NAME }} • Internal Portal</span>
+        </div>
+    </header>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-icon-box">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </div>
+                <h1 class="login-title">Employee Portal Sign In</h1>
+                <p class="login-subtitle">Sign in to access your department's knowledge base</p>
+            </div>
+
+            <!-- Flash notifications -->
+            <div class="flash-container">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                {% if error %}
+                <div class="flash error">{{ error }}</div>
+                {% endif %}
+            </div>
+
+            <form action="{{ url_for('login') }}" method="post" class="login-form">
+                <div class="form-group">
+                    <label class="form-label" for="username">Username</label>
+                    <input type="text" id="username" name="username" class="form-input" placeholder="e.g. admin, hr_lead, it_specialist" required autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-input" placeholder="Enter your password" required>
+                </div>
+
+                <button type="submit" class="btn btn-login-submit">Sign In to Knowledge Base</button>
+            </form>
+
+            <!-- Quick Demo Credentials Guide -->
+            <div class="demo-accounts-box">
+                <div class="demo-title">🔑 Quick Demo Accounts (Department ACL Testing):</div>
+                <div class="demo-grid">
+                    <div class="demo-pill" onclick="fillLogin('admin', 'admin123')">
+                        <strong>admin</strong> (admin123)
+                        <span class="demo-role">ALL DEPARTMENTS</span>
+                    </div>
+                    <div class="demo-pill" onclick="fillLogin('hr_lead', 'hr123')">
+                        <strong>hr_lead</strong> (hr123)
+                        <span class="demo-role">HR ONLY</span>
+                    </div>
+                    <div class="demo-pill" onclick="fillLogin('it_specialist', 'it123')">
+                        <strong>it_specialist</strong> (it123)
+                        <span class="demo-role">IT ONLY</span>
+                    </div>
+                    <div class="demo-pill" onclick="fillLogin('finance_analyst', 'fin123')">
+                        <strong>finance_analyst</strong> (fin123)
+                        <span class="demo-role">FINANCE ONLY</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function fillLogin(u, p) {
+            document.getElementById('username').value = u;
+            document.getElementById('password').value = p;
+        }
+    </script>
+</body>
+</html>

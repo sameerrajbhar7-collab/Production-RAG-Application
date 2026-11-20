@@ -1,11 +1,25 @@
 # Environment variables and secrets
 .env
+.env.local
 
-# Python caching
+# Python caching & Virtual Environments
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+.venv/
+env/
+
+# Vector Storage & Temporary Uploads
+chroma_db/
+uploads/*
+!uploads/.gitkeep
+test_uploads/
+test_chroma/
 
 # Operating system metadata
 .DS_Store
